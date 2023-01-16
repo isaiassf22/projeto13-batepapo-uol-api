@@ -3,7 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import { MongoClient } from "mongodb"
 import dayjs from "dayjs"
-import Joi from "joi"
+import Joi, { date } from "joi"
 dotenv.config()
 
 const app= express()
@@ -49,6 +49,14 @@ const {name}=req.body
         return res.status(409).send("Esse usuario já exite!");
     }
     await userCollection.insertOne({name, lastStatus:Date.now()})
+    
+    await messagesCollection.insertOne({
+        from: name,
+        to: "Todos",
+        text: "entra na sala...",
+        type: "status",
+        time:lastStatus,
+      });
     res.status(201).send("Usuario cadastrado com sucesso!")
 
  }catch(err){
@@ -140,6 +148,23 @@ app.get("/status",async (req,res)=>{
         console.log(err)
     }
 })
+setInterval( async ()=>{
+const timesOut =Date.now - 10000
 
+try{
+    const boxUsers= await userCollection.find().toArray()
+   
+    for(i=0;i<boxUsers.length;i++){
+        if(boxUsers[i].lastStatus<timesOut){
+            console.log(boxUsers[i].lastStatus)
+            //await userCollection.find({name :})
+        }
+    }
+}catch(err){
+    console.log(err)
+}
 
-app.listen(5000, ()=> console.log("app rodando"))
+},5000)
+lastStatus
+
+app.listen(15000, ()=> console.log("app rodando"))
