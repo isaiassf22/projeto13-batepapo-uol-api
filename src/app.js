@@ -12,7 +12,7 @@ app.use(express.json())
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL)
 
-const lastStatus=dayjs().format("HH:MM:SS")
+const lastStatus=dayjs().format("HH:mm:ss")
 
 
 
@@ -87,7 +87,7 @@ app.post("/messages",async (req,res)=>{
         to:to,
         text:text,
         type:type,
-        time: dayjs().format("HH:mm:ss")
+        time:lastStatus
     }
 
     try{
@@ -122,6 +122,22 @@ app.get("/messages",async (req,res)=>{
     } catch (err) {
       console.log(err);
       res.status(422);
+    }
+})
+
+app.get("/status",async (req,res)=>{
+    const {user}=req.headers
+    try{
+        const userVerify= await userCollection.findOne({name:user})
+        if (!userVerify){
+           return res.status(401).send("usuário não encontrado!")
+        }
+        await userCollection.updateOne(
+            { name: user }, { $set: { lastStatus: Date.now() } }
+            )
+            res.sendStatus(200)
+    }catch(err){
+        console.log(err)
     }
 })
 
