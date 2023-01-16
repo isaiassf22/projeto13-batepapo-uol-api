@@ -3,7 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import { MongoClient } from "mongodb"
 import dayjs from "dayjs"
-import Joi, { date } from "joi"
+import Joi from "joi"
 dotenv.config()
 
 const app= express()
@@ -149,22 +149,27 @@ app.get("/status",async (req,res)=>{
     }
 })
 setInterval( async ()=>{
-const timesOut =Date.now - 10000
-
+const timesOut =Date.now() - 10000
+ const toDelete=[]
 try{
     const boxUsers= await userCollection.find().toArray()
    
-    for(i=0;i<boxUsers.length;i++){
+    for(let i=0;i<boxUsers.length;i++){
+       
+        
+
         if(boxUsers[i].lastStatus<timesOut){
-            console.log(boxUsers[i].lastStatus)
-            //await userCollection.find({name :})
+            toDelete.push(boxUsers[i].name)
         }
     }
+    console.log(toDelete)
+    await userCollection.find({name:toDelete})
+    await userCollection.deleteMany({name:toDelete})
 }catch(err){
     console.log(err)
 }
 
-},5000)
+},15000)
 lastStatus
 
-app.listen(15000, ()=> console.log("app rodando"))
+app.listen(5000, ()=> console.log("app rodando"))
