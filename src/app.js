@@ -102,12 +102,27 @@ app.post("/messages",async (req,res)=>{
 })
 
 app.get("/messages",async (req,res)=>{
- try{
-    const boxMessages =await messagesCollection.find().toArray()
-    res.send(boxMessages)
- }catch (err){
-    console.log(err)
- }
+    const limit = Number(req.query.limit);
+    const { user } = req.headers;
+  
+    try {
+      const messages = await messagesCollection
+        .find({
+          $or: [
+            { from: user },
+            { to: { $in: [user, "Todos"] } }, 
+            { type: "message" },
+          ],
+        }).limit(limit).toArray();
+  
+      if (messages.length < 1) {
+        return res.status(404).send("nenhuma mensagem encontrada!");
+      }
+      res.send(messages);
+    } catch (err) {
+      console.log(err);
+      res.status(422);
+    }
 })
 
 
