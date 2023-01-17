@@ -32,7 +32,7 @@ try {
 } catch (err) {
     console.log(err)
 }
-const db = mongoClient.db("batepapoUol")
+const db = mongoClient.db()
 const userCollection = db.collection("users")
 const messagesCollection = db.collection("menssages")
 
