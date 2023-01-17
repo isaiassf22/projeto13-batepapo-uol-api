@@ -33,8 +33,8 @@ try {
     console.log(err)
 }
 const db = mongoClient.db()
-const userCollection = db.collection("users")
-const messagesCollection = db.collection("menssages")
+const userCollection = db.collection("participants")
+const messagesCollection = db.collection("messages")
 
 
 app.post("/participants", async (req, res) => { //cadastro
