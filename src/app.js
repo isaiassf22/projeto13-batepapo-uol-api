@@ -23,7 +23,8 @@ const userShema = Joi.object({
 const messageShema = Joi.object({
     to: Joi.string().min(3).max(30).required(),
     text: Joi.string().min(1).required(),
-    type: Joi.string().min(1).required().valid("message", "private_message")
+    type: Joi.string().min(1).required().valid("message", "private_message"),
+    user: Joi.string().min(3).required()
 })
 
 try {
@@ -83,12 +84,23 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req, res) => {
     const { to, text, type } = req.body
     const { user } = req.headers
-    const { error, value } = messageShema.validate({ to: to, text: text, type: type },{ abortEarly: false })
+
+    const { error, value } = messageShema.validate({ to: to, text: text, type: type, user: user }, { abortEarly: false })
     if (error) {
         const err = error.details.map((e) => e.message)
         return res.status(422).send(err)
     }
-  
+
+    try {
+        const verify = await userCollection.findOne({ name: user })
+        if (!verify) {
+            return res.sendStatus(422)
+        }
+
+    } catch (err) {
+        console.log(err)
+    }
+
     const message = {
         from: user,
         to: to,
@@ -112,10 +124,9 @@ app.post("/messages", async (req, res) => {
 app.get("/messages", async (req, res) => {
     const limit = Number(req.query.limit);
     const { user } = req.headers;
-    if (isNaN(limit) || limit <= 0)
-    {
+    if (isNaN(limit) || limit <= 0) {
         return res.sendStatus(422)
-    } 
+    }
     try {
         const messages = await messagesCollection
             .find({
