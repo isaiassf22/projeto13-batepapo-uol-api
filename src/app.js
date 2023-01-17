@@ -23,7 +23,7 @@ const userShema = Joi.object({
 const messageShema = Joi.object({
     to: Joi.string().min(3).max(30).required(),
     text: Joi.string().min(1).required(),
-    type: Joi.string().min(1)
+    type: Joi.string().min(1).required().valid("message", "private_message")
 })
 
 try {
@@ -56,11 +56,11 @@ app.post("/participants", async (req, res) => { //cadastro
             text: "entra na sala...",
             type: "status",
             time: lastStatus,
-        });
+        })
         res.status(201).send("Usuario cadastrado com sucesso!")
 
-    } catch (err) {
-        console.log(err)
+    } catch (error) {
+        res.sendStatus(500)
     }
 })
 
@@ -83,13 +83,12 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req, res) => {
     const { to, text, type } = req.body
     const { user } = req.headers
-    const { error, value } = messageShema.validate({ to: to, text: text, type: type })
+    const { error, value } = messageShema.validate({ to: to, text: text, type: type },{ abortEarly: false })
     if (error) {
-        return res.status(422)
+        const err = error.details.map((e) => e.message)
+        return res.status(422).send(err)
     }
-    if (!(type == "private_message" || type == "message")) {
-        return res.status(422).send("type precisa estar no formato!")
-    }
+  
     const message = {
         from: user,
         to: to,
@@ -113,7 +112,10 @@ app.post("/messages", async (req, res) => {
 app.get("/messages", async (req, res) => {
     const limit = Number(req.query.limit);
     const { user } = req.headers;
-
+    if (isNaN(limit) || limit <= 0)
+    {
+        return res.sendStatus(422)
+    } 
     try {
         const messages = await messagesCollection
             .find({
@@ -124,13 +126,13 @@ app.get("/messages", async (req, res) => {
                 ],
             }).limit(limit).toArray();
 
-        if (messages.length < 1) {
+        if (messages.length === 0) {
             return res.status(404).send("nenhuma mensagem encontrada!");
         }
         res.send(messages);
     } catch (err) {
         console.log(err);
-        res.sendStatus(422);
+        res.sendStatus(500);
     }
 })
 
@@ -139,7 +141,7 @@ app.get("/status", async (req, res) => {
     try {
         const userVerify = await userCollection.findOne({ name: user })
         if (!userVerify) {
-            return res.status(401).send("usuário não encontrado!")
+            return res.status(404).send("usuário não encontrado!")
         }
         await userCollection.updateOne(
             { name: user }, { $set: { lastStatus: Date.now() } }
